@@ -2,20 +2,227 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Movimientos de Powerlifting</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>Análisis de Movimientos de Powerlifting</h1>
         <div class="upload-section">
-            <input type="file" id="videoInput" accept="video/*">
-            <button onclick="uploadVideo()">Analizar Video</button>
+            <input type="file" id="videoInput" class="custom-file-upload" accept="video/*" style="display: none;">
+            <button class="cool-button" onclick="document.getElementById('videoInput').click()">Seleccionar Video</button>
+            <button class="cool-button" onclick="uploadVideo()">Analizar Video</button>
         </div>
-        <div id="feedback" class="feedback-section"></div>
-        <div id="progress" class="progress-section"></div>
+        <div class="video-preview" id="videoPreview" style="display: none;">
+            <video controls id="videoPreviewPlayer"></video>
+        </div>
+        <div class="results-container">
+            <div class="results-section">
+                <div class="feedback-section" id="feedback"></div>
+                <div class="charts-section">
+                    <div id="framesChartContainer"></div>
+                    <div id="confidenceChartContainer"></div>
+                </div>
+            </div>
+            <div class="frames-buttons-section" id="framesButtonsSection" style="display: none;">
+                <div class="frames-info" id="framesInfo"></div>
+                <div class="buttons-section" id="buttonsSection"></div>
+            </div>
+        </div>
+        <div class="progress-section" id="progress"></div>
+        <div class="loading-section" id="loading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script>
+        function uploadVideo() {
+            const videoInput = document.getElementById('videoInput');
+            const videoPreview = document.getElementById('videoPreview');
+            const feedbackDiv = document.getElementById('feedback');
+            const progressDiv = document.getElementById('progress');
+            const loadingDiv = document.getElementById('loading');
+            const framesInfoDiv = document.getElementById('framesInfo');
+            const buttonsSectionDiv = document.getElementById('buttonsSection');
+            const framesButtonsSection = document.getElementById('framesButtonsSection');
+            
+            if (!videoInput.files.length) {
+                feedbackDiv.innerText = "Por favor, selecciona un video.";
+                return;
+            }
+            
+            const file = videoInput.files[0];
+            
+            // Intentar mostrar el video subido
+            const videoURL = URL.createObjectURL(file);
+            videoPreview.querySelector('#videoPreviewPlayer').src = videoURL;
+            videoPreview.querySelector('#videoPreviewPlayer').load();
+            videoPreview.style.display = 'block';
+            
+            // Manejar errores de reproducción
+            videoPreview.querySelector('#videoPreviewPlayer').onerror = () => {
+                feedbackDiv.innerText = "Advertencia: No se pudo reproducir el video. El análisis continuará con el archivo subido.";
+                videoPreview.style.display = 'none';
+            };
+            
+            // Mostrar el spinner de carga
+            feedbackDiv.innerText = "";
+            progressDiv.innerText = "";
+            loadingDiv.style.display = 'flex';
+            
+            const formData = new FormData();
+            formData.append('video', file);
+            
+            // Simular progreso
+            let simulatedProgress = 0;
+            const progressInterval = setInterval(() => {
+                simulatedProgress += 10;
+                if (simulatedProgress <= 100) {
+                    progressDiv.innerText = `Progreso: ${simulatedProgress}%`;
+                }
+            }, 1000);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                loadingDiv.style.display = 'none';
+                progressDiv.innerText = "Procesamiento completado";
+                if (data.error) {
+                    feedbackDiv.innerText = data.error;
+                } else {
+                    feedbackDiv.innerText = data.feedback;
+                    // Extraer datos del feedback de forma más robusta
+                    const lines = data.feedback.split('\n');
+                    let framesCorrectosPercent = 0;
+                    let confianzaPercent = 0;
+                    let totalFrames = 200; // Valor predeterminado si no se detecta
+                    lines.forEach(line => {
+                        const framesMatch = line.match(/Proporción de frames correctos: (\d+\.\d+)%/);
+                        const confianzaMatch = line.match(/Confianza promedio: (\d+\.\d+)%/);
+                        const totalFramesMatch = line.match(/Número total de frames analizados: (\d+)/);
+                        if (framesMatch) framesCorrectosPercent = parseFloat(framesMatch[1]);
+                        if (confianzaMatch) confianzaPercent = parseFloat(confianzaMatch[1]);
+                        if (totalFramesMatch) totalFrames = parseInt(totalFramesMatch[1]);
+                    });
+                    // Calcular conteos basados en porcentajes y total de frames
+                    const correctFramesCount = Math.round((framesCorrectosPercent / 100) * totalFrames);
+                    const incorrectFramesCount = totalFrames - correctFramesCount;
+                    const confianzaCount = Math.round((confianzaPercent / 100) * totalFrames);
+                    const desconfianzaCount = totalFrames - confianzaCount;
+                    // Mostrar información de frames
+                    framesInfoDiv.innerHTML = `
+                        Proporción de Frames Correctos: ${framesCorrectosPercent}%<br>
+                        Frames Correctos: ${correctFramesCount} de ${totalFrames}<br>
+                        Frames Incorrectos: ${incorrectFramesCount} de ${totalFrames}<br>
+                        Confianza Promedio: ${confianzaPercent}%
+                    `;
+                    framesButtonsSection.style.display = 'flex';
+                    // Gráfica de Frames Correctos vs Incorrectos
+                    Highcharts.chart('framesChartContainer', {
+                        chart: { type: 'pie', backgroundColor: null },
+                        title: { text: 'Distribución de Frames', style: { color: '#ff3333' } },
+                        tooltip: {
+                            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br>Cantidad: {point.y} frames'
+                        },
+                        plotOptions: {
+                            pie: {
+                                allowPointSelect: true,
+                                cursor: 'pointer',
+                                dataLabels: {
+                                    enabled: true,
+                                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                                    style: { color: '#ffffff' }
+                                }
+                            }
+                        },
+                        series: [{
+                            name: 'Frames',
+                            data: [
+                                { name: 'Frames Correctos', y: correctFramesCount },
+                                { name: 'Frames Incorrectos', y: incorrectFramesCount }
+                            ]
+                        }]
+                    });
+                    // Gráfica de Confianza vs Desconfianza
+                    Highcharts.chart('confidenceChartContainer', {
+                        chart: { type: 'pie', backgroundColor: null },
+                        title: { text: 'Nivel de Confianza', style: { color: '#ff3333' } },
+                        tooltip: {
+                            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br>Cantidad: {point.y} frames'
+                        },
+                        plotOptions: {
+                            pie: {
+                                allowPointSelect: true,
+                                cursor: 'pointer',
+                                dataLabels: {
+                                    enabled: true,
+                                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                                    style: { color: '#ffffff' }
+                                }
+                            }
+                        },
+                        series: [{
+                            name: 'Confianza',
+                            data: [
+                                { name: 'Nivel de Confianza', y: confianzaCount },
+                                { name: 'Desconfianza', y: desconfianzaCount }
+                            ]
+                        }]
+                    });
+                    // Añadir botones dinámicos
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.innerText = 'Descargar Retroalimentación';
+                    downloadBtn.className = 'cool-button';
+                    downloadBtn.onclick = () => downloadFeedback(data.feedback);
+                    buttonsSectionDiv.appendChild(downloadBtn);
+                    const resetBtn = document.createElement('button');
+                    resetBtn.innerText = 'Subir Nuevo Video';
+                    resetBtn.className = 'cool-button';
+                    resetBtn.onclick = resetInterface;
+                    buttonsSectionDiv.appendChild(resetBtn);
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                loadingDiv.style.display = 'none';
+                progressDiv.innerText = "Error en el procesamiento";
+                feedbackDiv.innerText = "Error al procesar el video: " + error;
+            });
+        }
+
+        function downloadFeedback(feedback) {
+            const blob = new Blob([feedback], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'retroalimentacion.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function resetInterface() {
+            const videoPreview = document.getElementById('videoPreview');
+            const feedbackDiv = document.getElementById('feedback');
+            const progressDiv = document.getElementById('progress');
+            const framesInfoDiv = document.getElementById('framesInfo');
+            const buttonsSectionDiv = document.getElementById('buttonsSection');
+            const framesButtonsSection = document.getElementById('framesButtonsSection');
+            videoPreview.style.display = 'none';
+            videoPreview.querySelector('#videoPreviewPlayer').src = '';
+            feedbackDiv.innerText = '';
+            progressDiv.innerText = '';
+            framesInfoDiv.innerHTML = '';
+            buttonsSectionDiv.innerHTML = '';
+            framesButtonsSection.style.display = 'none';
+            document.getElementById('videoInput').value = '';
+            document.getElementById('framesChartContainer').innerHTML = '';
+            document.getElementById('confidenceChartContainer').innerHTML = '';
+        }
+    </script>
 </body>
 </html>
