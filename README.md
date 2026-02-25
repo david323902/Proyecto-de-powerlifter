@@ -1,68 +1,84 @@
-# Powerlifting Technique Analysis using Machine Learning
+# Análisis Automático de Técnica en Powerlifting con Inteligencia Artificial
 
-Sistema de análisis automático de la ejecución de ejercicios de powerlifting
-mediante **visión por computador y redes neuronales**, enfocado en la detección
-de errores técnicos y la prevención de lesiones.
+## 📌 Descripción
+Proyecto de **Machine Learning y Visión por Computador** orientado a la **detección automática de errores en la ejecución de ejercicios de powerlifting** (sentadilla, press de banca y peso muerto), utilizando análisis de video y redes neuronales.
 
----
+El sistema evalúa la técnica del atleta y clasifica la ejecución como **correcta o incorrecta**, proporcionando una base para retroalimentación automática y prevención de lesiones.
 
-## 🚀 Descripción del Proyecto
+## 🎯 Objetivo del Proyecto
+Desarrollar un modelo de IA capaz de:
+- Analizar movimientos complejos y multiarticulares
+- Identificar patrones biomecánicos incorrectos
+- Apoyar la mejora del rendimiento y reducción de lesiones
 
-Este proyecto implementa un modelo de **Machine Learning en Python** que analiza
-videos de ejercicios de powerlifting (sentadilla, press de banca y peso muerto)
-para evaluar la correcta ejecución de la técnica.
+## 🚀 Tecnologías Utilizadas
 
-Se aplicó la metodología **CRISP-DM**, cubriendo desde la recolección de datos
-hasta el despliegue de un prototipo funcional.
+### Procesamiento de Video
+- **OpenCV** – Procesamiento de imágenes y video
+- **MediaPipe Pose** – Detección de puntos clave del cuerpo (landmarks)
+- **YOLOv8** – Detección del atleta (bounding box, opcional)
+- **Filtro Gaussiano** – Reducción de ruido
+- **Normalización de video** – 720p, 10 FPS
 
----
+### Machine Learning / Deep Learning
+- **Python** – Lenguaje principal
+- **TensorFlow** – Framework de Deep Learning
+- **Keras** – Construcción y entrenamiento de CNN
+- **scikit-learn** – Modelos clásicos (SVM, Random Forest)
+- **k-fold cross-validation (k=5)** – Validación del modelo
 
-## 🧠 Tecnologías Utilizadas
+### Modelos Implementados
+- **SVM**
+- **Random Forest**
+- **CNN (Red Neuronal Convolucional)**  
+  - 12 capas convolucionales  
+  - Dropout: 0.5  
+  - Optimizador Adam  
+  - Learning rate: 0.0001  
+  - Batch size: 16  
+  - Early stopping  
 
-- Python
-- OpenCV
-- MediaPipe Pose
-- TensorFlow
-- Keras
-- scikit-learn
-- YOLOv8 (uso parcial)
-- Flask
-- Streamlit
+### Resultados
+- **Exactitud máxima: 93.3 %** (CNN)
 
----
+### Despliegue y Prototipo
+- **Flask** – Backend para inferencia
+- **Streamlit** – Interfaz web
+- **TensorFlow SavedModel** – Modelo optimizado
+- **Inferencia en tiempo real (< 3 segundos en CPU)**
 
-## ⚙️ Flujo de Funcionamiento
+## ⚙️ Flujo del Sistema
+1. Carga o grabación del video
+2. Preprocesamiento automático
+3. Extracción de landmarks corporales
+4. Inferencia del modelo de IA
+5. Clasificación de la técnica
+6. Visualización del resultado
 
-1. Entrada de video (grabado o en tiempo real).
-2. Preprocesamiento del video (recorte, estabilización, 10 FPS, 720p).
-3. Extracción de landmarks corporales.
-4. Entrenamiento y evaluación de modelos ML.
-5. Clasificación de la ejecución como correcta o incorrecta.
-6. Visualización de resultados en interfaz web.
+## 🧠 Mi Rol en el Proyecto
+- Diseño del pipeline completo de IA
+- Recolección y etiquetado del dataset
+- Preprocesamiento de videos
+- Entrenamiento y evaluación de modelos
+- Desarrollo del backend y prototipo funcional
 
----
+## 📊 Dataset
+- 87 videos iniciales
+- 72 videos finales etiquetados
+- 33 ejecuciones correctas
+- 39 ejecuciones incorrectas
+- Videos propios y de competiciones oficiales
 
-## 📊 Modelado y Resultados
+## 📌 Estado del Proyecto
+🟢 Prototipo funcional  
+🔧 En mejora continua
 
-- Modelos evaluados: SVM, Random Forest y CNN.
-- Mejor modelo: **CNN (Keras + TensorFlow)**.
-- Exactitud alcanzada: **93.3 %**.
-- Validación: K-Fold Cross Validation (k=5).
-
----
-
-## 🚀 Despliegue
-
-- Backend: Flask (API REST).
-- Frontend: Streamlit.
-- Inferencia en tiempo real (< 3 segundos por video en CPU).
-
----
-
-## 🛠️ Estado del Proyecto
-🟡 Prototipo funcional / En mejora continua.
-
----
+## 📚 Aprendizajes Clave
+- Visión por computador aplicada al deporte
+- Machine Learning con datos reales
+- Análisis de movimientos complejos
+- Despliegue de modelos de IA
+- Integración IA + aplicaciones web
 
 ## 👤 Autor
 
