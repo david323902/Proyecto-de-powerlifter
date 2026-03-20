@@ -25,9 +25,7 @@ The system detects 33 full-body landmarks using **MediaPipe Pose**, calculates j
 
 > 📸 *Screenshots and video demo coming soon — add your images to the `/docs` folder*
 
-<!-- Once you have screenshots, replace the line above with:
-![Demo screenshot](docs/demo.png)
--->
+
 
 ---
 
